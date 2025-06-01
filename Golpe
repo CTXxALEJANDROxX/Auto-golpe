@@ -1,55 +1,47 @@
---// Variables
-local enabled = false
 local player = game.Players.LocalPlayer
+local toolName = "Punch"
 local char = player.Character or player.CharacterAdded:Wait()
-local toolName = "Punch" -- Cambia si el nombre de la herramienta es otro
 
---// Función para equipar la herramienta
-local function equipTool()
-    local bp = player.Backpack:FindFirstChild(toolName)
-    if bp then
-        char.Humanoid:EquipTool(bp)
-    end
-end
-
---// Función de auto punch
-local function autoPunch()
-    while enabled do
-        local tool = char:FindFirstChild(toolName) or player.Backpack:FindFirstChild(toolName)
-        if tool then
-            equipTool()
-            pcall(function()
-                tool:Activate()
-            end)
+if not _G.AutoPunchEnabled then
+    _G.AutoPunchEnabled = true
+    print("Auto Punch ACTIVADO")
+    
+    local function equipTool()
+        local bp = player.Backpack:FindFirstChild(toolName)
+        if bp then
+            char.Humanoid:EquipTool(bp)
         end
-        task.wait(0.2)
     end
+
+    local punching = true
+
+    -- Actualizar personaje si muere
+    player.CharacterAdded:Connect(function(c)
+        char = c
+        task.wait(1)
+        if _G.AutoPunchEnabled then
+            equipTool()
+        else
+            punching = false
+        end
+    end)
+
+    -- Bucle de golpeo
+    task.spawn(function()
+        while _G.AutoPunchEnabled do
+            local tool = char:FindFirstChild(toolName) or player.Backpack:FindFirstChild(toolName)
+            if tool then
+                equipTool()
+                pcall(function()
+                    tool:Activate()
+                end)
+            end
+            task.wait(0.2)
+        end
+        print("Auto Punch DESACTIVADO")
+    end)
+
+else
+    _G.AutoPunchEnabled = false
+    print("Auto Punch DESACTIVADO")
 end
-
---// Actualizar el personaje cuando reaparece
-player.CharacterAdded:Connect(function(c)
-    char = c
-    task.wait(1)
-    if enabled then
-        equipTool()
-        autoPunch()
-    end
-end)
-
---// Función para activar o desactivar el auto punch desde tu menú
-local function toggleAutoPunch(state)
-    enabled = state
-    if enabled then
-        equipTool()
-        -- Ejecutar autoPunch en paralelo para no bloquear
-        task.spawn(autoPunch)
-    end
-end
-
--- Ejemplo de cómo usarlo:
--- toggleAutoPunch(true)  -- Activa
--- toggleAutoPunch(false) -- Desactiva
-
-return {
-    toggle = toggleAutoPunch
-}
